@@ -1,0 +1,18 @@
+# server/.gitignore
+
+# Binaries
+*.exe
+*.out
+*.test
+web-crawler-server
+
+# Dependency / build artifacts
+vendor/
+bin/
+*.log
+
+# Environment
+.env
+
+# OS files
+.DS_Store
