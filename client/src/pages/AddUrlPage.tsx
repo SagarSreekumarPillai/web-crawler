@@ -9,11 +9,13 @@ export default function AddUrlPage() {
 
   const handleSubmit = async () => {
     if (!url.trim()) return alert("Please enter a URL");
+
     try {
       const result = await addUrl(url);
-      console.log("URL submitted:", result);
+      console.log("✅ URL submitted:", result);
       // TODO: navigate to dashboard or show toast
     } catch (err: any) {
+      console.error("❌ Submission failed:", err.message);
       alert(err.message);
     }
   };
@@ -30,7 +32,9 @@ export default function AddUrlPage() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
-          <Button onClick={handleSubmit}>Start Crawling</Button>
+          <Button type="button" onClick={handleSubmit}>
+            Start Crawling
+          </Button>
         </CardContent>
       </Card>
     </div>
