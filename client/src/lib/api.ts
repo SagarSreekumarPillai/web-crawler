@@ -1,10 +1,8 @@
-
 export async function addUrl(url: string) {
-    const response = await fetch("https://httpbin.org/post", {
+    const response = await fetch("http://localhost:8080/api/urls", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer dummy-token", // Replace later
       },
       body: JSON.stringify({ url }),
     });
