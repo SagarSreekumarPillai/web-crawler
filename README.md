@@ -1,8 +1,6 @@
-# 🌐 Sykell Web Crawler
+# 🌐 Web Crawler
 
 A fullstack web application that accepts website URLs, crawls the content, and displays useful metadata like HTML version, title, link stats, heading counts, broken links, and presence of login forms.
-
-Built as part of the **Sykell Full-Stack Developer Task**.
 
 ---
 
