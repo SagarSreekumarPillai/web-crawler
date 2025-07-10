@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { addUrl } from "@/lib/api"; // optional if adding re-crawl
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 type UrlRecord = {
   id: number;
@@ -26,6 +25,7 @@ export default function DashboardPage() {
   const [urls, setUrls] = useState<UrlRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [metadataMap, setMetadataMap] = useState<Record<number, Metadata | null>>({});
+  const [statusMap, setStatusMap] = useState<Record<number, "loading" | "done" | "error">>({});
 
   useEffect(() => {
     fetch("http://localhost:8080/api/urls")
@@ -34,8 +34,9 @@ export default function DashboardPage() {
         setUrls(data);
         setLoading(false);
 
-        // Trigger crawl for each
         data.forEach((item: UrlRecord) => {
+          setStatusMap((prev) => ({ ...prev, [item.id]: "loading" }));
+
           fetch("http://localhost:8080/api/urls", {
             method: "POST",
             headers: {
@@ -49,13 +50,12 @@ export default function DashboardPage() {
                 ...prev,
                 [item.id]: resData.metadata,
               }));
+              setStatusMap((prev) => ({ ...prev, [item.id]: "done" }));
             })
             .catch((err) => {
               console.error("Crawl failed for", item.url, err);
-              setMetadataMap((prev) => ({
-                ...prev,
-                [item.id]: null,
-              }));
+              setMetadataMap((prev) => ({ ...prev, [item.id]: null }));
+              setStatusMap((prev) => ({ ...prev, [item.id]: "error" }));
             });
         });
       });
@@ -81,20 +81,46 @@ export default function DashboardPage() {
                   <th className="p-2">Internal</th>
                   <th className="p-2">External</th>
                   <th className="p-2">Login</th>
+                  <th className="p-2">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {urls.map((u) => {
                   const meta = metadataMap[u.id];
+                  const status = statusMap[u.id] || "loading";
+
                   return (
                     <tr key={u.id} className="border-b">
-                      <td className="p-2">{u.url}</td>
+                      <td className="p-2 max-w-[200px] truncate">{u.url}</td>
                       <td className="p-2">{meta ? meta.title : "..."}</td>
                       <td className="p-2">{meta ? meta.html_version : "..."}</td>
                       <td className="p-2">{meta ? meta.h1_count : "..."}</td>
                       <td className="p-2">{meta ? meta.internal_links : "..."}</td>
                       <td className="p-2">{meta ? meta.external_links : "..."}</td>
-                      <td className="p-2">{meta ? (meta.has_login_form ? "Yes" : "No") : "..."}</td>
+                      <td className="p-2">
+                        {meta ? (
+                          meta.has_login_form ? (
+                            <Badge className="bg-green-500 text-white">Yes</Badge>
+                          ) : (
+                            <Badge className="bg-gray-300">No</Badge>
+                          )
+                        ) : (
+                          <Skeleton className="h-5 w-10" />
+                        )}
+                      </td>
+                      <td className="p-2">
+                        <Badge
+                          className={
+                            status === "done"
+                              ? "bg-green-600 text-white"
+                              : status === "error"
+                              ? "bg-red-600 text-white"
+                              : "bg-yellow-500 text-white"
+                          }
+                        >
+                          {status}
+                        </Badge>
+                      </td>
                     </tr>
                   );
                 })}
