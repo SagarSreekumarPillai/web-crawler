@@ -15,23 +15,25 @@ type Url struct {
 
 // Create a new URL entry
 func (u *Url) Create() error {
-	query := "INSERT INTO urls (url, status) VALUES (?, ?)"
-	result, err := db.DB.Exec(query, u.Url, u.Status)
+	// Check if URL already exists
+	var existingID int
+	err := db.DB.QueryRow("SELECT id FROM urls WHERE url = ?", u.Url).Scan(&existingID)
+	if err == nil {
+		// URL already exists, skip insertion
+		u.ID = existingID
+		return nil
+	}
+
+	// Insert new if not found
+	result, err := db.DB.Exec("INSERT INTO urls (url, status) VALUES (?, ?)", u.Url, u.Status)
 	if err != nil {
 		return err
 	}
 	id, _ := result.LastInsertId()
 	u.ID = int(id)
-
-	// Fetch the inserted row's full details (to get created_at)
-	row := db.DB.QueryRow("SELECT created_at FROM urls WHERE id = ?", u.ID)
-	if err := row.Scan(&u.CreatedAt); err != nil {
-		return err
-	}
-
-	log.Println("✅ New URL inserted with ID:", u.ID)
 	return nil
 }
+
 
 
 // Get all URLs
