@@ -52,3 +52,16 @@ func GetAllUrls() ([]Url, error) {
 	}
 	return urls, nil
 }
+
+
+func GetUrlByID(id string) (*Url, error) {
+	query := "SELECT id, url, status, created_at FROM urls WHERE id = ?"
+	row := db.DB.QueryRow(query, id)
+
+	var u Url
+	err := row.Scan(&u.ID, &u.Url, &u.Status, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}

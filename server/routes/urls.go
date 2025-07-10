@@ -15,6 +15,7 @@ func UrlRoutes(rg *gin.RouterGroup) {
 	{
 		urls.POST("", AddUrl)  // /api/urls
 		urls.GET("", GetUrls)  // /api/urls
+		urls.POST("/:id/recrawl", ReCrawl)
 	}
 }
 
@@ -56,4 +57,26 @@ func GetUrls(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, urls)
+}
+
+// POST /api/urls/:id/recrawl
+func ReCrawl(c *gin.Context) {
+	id := c.Param("id")
+
+	urlEntry, err := models.GetUrlByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
+		return
+	}
+
+	meta, err := utils.Crawl(urlEntry.Url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Crawl failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"url":      urlEntry,
+		"metadata": meta,
+	})
 }
