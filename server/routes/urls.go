@@ -16,6 +16,7 @@ func UrlRoutes(rg *gin.RouterGroup) {
 		urls.POST("", AddUrl)  // /api/urls
 		urls.GET("", GetUrls)  // /api/urls
 		urls.POST("/:id/recrawl", ReCrawl)
+
 	}
 }
 
@@ -29,6 +30,14 @@ func AddUrl(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
+
+	// ✅ Normalize URL to avoid duplicates like www.tuskertron.com vs tuskertron.com
+	normalized, err := utils.NormalizeURL(input.Url)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL format"})
+		return
+	}
+	input.Url = normalized
 
 	input.Status = "queued"
 	if err := input.Create(); err != nil {
@@ -48,6 +57,7 @@ func AddUrl(c *gin.Context) {
 		"metadata": meta,
 	})
 }
+
 
 // GET /api/urls
 func GetUrls(c *gin.Context) {
