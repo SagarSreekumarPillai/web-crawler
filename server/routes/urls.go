@@ -5,8 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/SagarSreekumarPillai/web-crawler/server/db"
 	"github.com/SagarSreekumarPillai/web-crawler/server/models"
-	"github.com/SagarSreekumarPillai/web-crawler/server/utils"
+	
 )
 
 func UrlRoutes(rg *gin.RouterGroup) {
@@ -15,6 +16,9 @@ func UrlRoutes(rg *gin.RouterGroup) {
 		urls.GET("", GetUrls)
 		urls.POST("", AddUrl)
 		urls.POST("/:id/recrawl", ReCrawl)
+		urls.DELETE("/:id", DeleteUrl)
+		urls.DELETE("", DeleteAllUrls)
+
 	}
 }
 
@@ -72,3 +76,36 @@ func ReCrawl(c *gin.Context) {
 
 	c.JSON(http.StatusOK, urlWithMeta)
 }
+
+// DELETE /api/urls/:id
+func DeleteUrl(c *gin.Context) {
+	id := c.Param("id")
+
+	// Check if exists
+	existing, err := models.GetUrlByID(id)
+	if err != nil || existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
+		return
+	}
+
+	// Delete from DB
+	_, err = db.DB.Exec(`DELETE FROM urls WHERE id = ?`, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Deleted"})
+}
+
+// DELETE /api/urls
+func DeleteAllUrls(c *gin.Context) {
+	_, err := db.DB.Exec(`DELETE FROM urls`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear all URLs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "All URLs deleted"})
+}
+
