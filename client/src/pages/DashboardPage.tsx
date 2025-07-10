@@ -1,134 +1,186 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { RotateCcw } from "lucide-react"
 
 type UrlRecord = {
-  id: number;
-  url: string;
-  created_at: string;
-};
+  id: number
+  url: string
+  created_at: string
+}
 
 type Metadata = {
-  title: string;
-  html_version: string;
-  h1_count: number;
-  h2_count: number;
-  h3_count: number;
-  internal_links: number;
-  external_links: number;
-  broken_links: string[];
-  has_login_form: boolean;
-};
+  title: string
+  html_version: string
+  h1_count: number
+  h2_count: number
+  h3_count: number
+  internal_links: number
+  external_links: number
+  broken_links: string[]
+  has_login_form: boolean
+}
 
 export default function DashboardPage() {
-  const [urls, setUrls] = useState<UrlRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [metadataMap, setMetadataMap] = useState<Record<number, Metadata | null>>({});
-  const [statusMap, setStatusMap] = useState<Record<number, "loading" | "done" | "error">>({});
+  const [urls, setUrls] = useState<UrlRecord[]>([])
+  const [selectedUrl, setSelectedUrl] = useState<UrlRecord | null>(null)
+  const [metadata, setMetadata] = useState<Metadata | null>(null)
+  const [loading, setLoading] = useState(false)
 
+  const location = useLocation()
+  const urlFromState = location.state?.urlData?.url
+
+  // Load all past crawls
   useEffect(() => {
     fetch("http://localhost:8080/api/urls")
       .then((res) => res.json())
       .then((data) => {
-        setUrls(data);
-        setLoading(false);
+        const sorted = data.sort((a: UrlRecord, b: UrlRecord) =>
+          b.created_at.localeCompare(a.created_at)
+        )
+        setUrls(sorted)
+        if (urlFromState) {
+          const matched = sorted.find((u:UrlRecord) => u.url === urlFromState.url)
+          setSelectedUrl(matched ?? sorted[0])
+        } else {
+          setSelectedUrl(sorted[0])
+        }
+      })
+  }, [])
 
-        data.forEach((item: UrlRecord) => {
-          setStatusMap((prev) => ({ ...prev, [item.id]: "loading" }));
-
-          fetch("http://localhost:8080/api/urls", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ url: item.url }),
-          })
-            .then((res) => res.json())
-            .then((resData) => {
-              setMetadataMap((prev) => ({
-                ...prev,
-                [item.id]: resData.metadata,
-              }));
-              setStatusMap((prev) => ({ ...prev, [item.id]: "done" }));
-            })
-            .catch((err) => {
-              console.error("Crawl failed for", item.url, err);
-              setMetadataMap((prev) => ({ ...prev, [item.id]: null }));
-              setStatusMap((prev) => ({ ...prev, [item.id]: "error" }));
-            });
-        });
-      });
-  }, []);
+  // Load metadata only on demand
+  const handleRecrawl = async (urlObj: UrlRecord) => {
+    setLoading(true)
+    setSelectedUrl(urlObj)
+    setMetadata(null)
+    try {
+      const res = await fetch(`http://localhost:8080/api/urls/${urlObj.id}/recrawl`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+      const data = await res.json()
+      setMetadata(data.metadata)
+    } catch (err) {
+      console.error("❌ Re-crawl failed", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      {/* Latest Crawl Overview */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">📊 Website Dashboard</CardTitle>
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle className="text-xl">
+            {selectedUrl ? `🔍 ${selectedUrl.url}` : "No URL Selected"}
+          </CardTitle>
+          {selectedUrl && (
+            <Button size="sm" variant="outline" onClick={() => handleRecrawl(selectedUrl)}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Re-crawl
+            </Button>
+          )}
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           {loading ? (
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-40 w-full" />
+          ) : metadata ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Title:</strong> {metadata.title || <span className="text-muted">N/A</span>}
+              </div>
+              <div>
+                <strong>HTML Version:</strong> {metadata.html_version}
+              </div>
+              <div>
+                <strong>H1 Count:</strong> {metadata.h1_count}
+              </div>
+              <div>
+                <strong>H2 Count:</strong> {metadata.h2_count}
+              </div>
+              <div>
+                <strong>H3 Count:</strong> {metadata.h3_count}
+              </div>
+              <div>
+                <strong>Internal Links:</strong> {metadata.internal_links}
+              </div>
+              <div>
+                <strong>External Links:</strong> {metadata.external_links}
+              </div>
+              <div>
+                <strong>Login Form:</strong>{" "}
+                {metadata.has_login_form ? (
+                  <Badge variant="default">Yes</Badge>
+                ) : (
+                  <Badge variant="secondary">No</Badge>
+                )}
+              </div>
+              <div className="col-span-2">
+                <strong>Broken Links:</strong>{" "}
+                {metadata.broken_links.length > 0 ? (
+                  <ul className="list-disc pl-4">
+                    {metadata.broken_links.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-muted">None found</span>
+                )}
+              </div>
+            </div>
           ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="p-2">URL</th>
-                  <th className="p-2">Title</th>
-                  <th className="p-2">HTML</th>
-                  <th className="p-2">H1</th>
-                  <th className="p-2">Internal</th>
-                  <th className="p-2">External</th>
-                  <th className="p-2">Login</th>
-                  <th className="p-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {urls.map((u) => {
-                  const meta = metadataMap[u.id];
-                  const status = statusMap[u.id] || "loading";
-
-                  return (
-                    <tr key={u.id} className="border-b">
-                      <td className="p-2 max-w-[200px] truncate">{u.url}</td>
-                      <td className="p-2">{meta ? meta.title : "..."}</td>
-                      <td className="p-2">{meta ? meta.html_version : "..."}</td>
-                      <td className="p-2">{meta ? meta.h1_count : "..."}</td>
-                      <td className="p-2">{meta ? meta.internal_links : "..."}</td>
-                      <td className="p-2">{meta ? meta.external_links : "..."}</td>
-                      <td className="p-2">
-                        {meta ? (
-                          meta.has_login_form ? (
-                            <Badge className="bg-green-500 text-white">Yes</Badge>
-                          ) : (
-                            <Badge className="bg-gray-300">No</Badge>
-                          )
-                        ) : (
-                          <Skeleton className="h-5 w-10" />
-                        )}
-                      </td>
-                      <td className="p-2">
-                        <Badge
-                          className={
-                            status === "done"
-                              ? "bg-green-600 text-white"
-                              : status === "error"
-                              ? "bg-red-600 text-white"
-                              : "bg-yellow-500 text-white"
-                          }
-                        >
-                          {status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <p className="text-muted">No metadata loaded for this URL yet.</p>
           )}
         </CardContent>
       </Card>
+
+      {/* Crawl History Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">📜 History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[200px]">
+            {urls.length === 0 ? (
+              <p className="text-muted">No crawl history yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {urls.map((u) => (
+                  <div
+                    key={u.id}
+                    className={`flex items-center justify-between px-3 py-2 rounded-md border cursor-pointer ${
+                      selectedUrl?.id === u.id
+                        ? "bg-muted border-ring"
+                        : "hover:bg-muted transition"
+                    }`}
+                    onClick={() => {
+                      setSelectedUrl(u)
+                      setMetadata(null)
+                    }}
+                  >
+                    <div className="truncate max-w-[60%] text-sm">{u.url}</div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRecrawl(u)
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
