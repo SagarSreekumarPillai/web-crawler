@@ -20,6 +20,7 @@ import {
   Heading3,
   RefreshCcw,
   Trash2,
+  PlusCircle,
 } from "lucide-react"
 
 type UrlRecord = {
@@ -69,7 +70,7 @@ export default function DashboardPage() {
       const data = await res.json()
       setNewUrl("")
       await fetchData()
-      setSelected(data)
+      setSelected(data.url)
     } catch (err) {
       console.error("❌ Failed to crawl:", err)
     } finally {
@@ -112,9 +113,32 @@ export default function DashboardPage() {
     }
   }
 
+  if (urls.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 bg-white">
+        <img src="/empty-state.svg" alt="No data" className="w-48 mb-6 opacity-70" />
+        <h2 className="text-2xl font-semibold mb-2">Welcome to Web Crawler</h2>
+        <p className="text-sm text-gray-500 mb-6 max-w-md">
+          You haven’t crawled any websites yet. Enter a URL to begin crawling and see insights here.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            placeholder="https://example.com"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            className="w-72"
+          />
+          <Button onClick={handleSubmit} disabled={submitting}>
+            <PlusCircle className="h-4 w-4 mr-1" />
+            {submitting ? "Crawling..." : "Start"}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 sm:p-6 md:p-10 bg-white text-black min-h-screen space-y-6 max-w-screen-2xl mx-auto">
-      {/* Top */}
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold tracking-tight">🌐 Web Crawler Dashboard</h1>
         <Button variant="ghost" size="sm" className="flex items-center gap-1">
@@ -122,7 +146,6 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Crawl input */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Add a Website URL</CardTitle>
@@ -141,7 +164,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left */}
         <div className="lg:col-span-3 space-y-6">
@@ -209,7 +231,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right */}
+        {/* Right: History */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <Card className="flex-1 flex flex-col">
             <CardHeader className="flex justify-between items-center">
@@ -228,37 +250,33 @@ export default function DashboardPage() {
             <CardContent className="p-0 flex-1">
               <ScrollArea className="h-full">
                 <div className="divide-y">
-                  {urls.length === 0 ? (
-                    <p className="p-4 text-xs text-muted-foreground">No history yet.</p>
-                  ) : (
-                    urls.map((u) => (
-                      <div
-                        key={u.id}
-                        className={`px-4 py-3 text-sm flex justify-between items-center hover:bg-muted cursor-pointer ${
-                          selected?.id === u.id ? "bg-blue-50 border-l-4 border-blue-500" : ""
-                        }`}
-                        onClick={() => setSelected(u)}
-                      >
-                        <div className="truncate w-40">{u.url}</div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(u.last_crawled_at).toLocaleDateString()}
-                          </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDelete(u.id)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                  {urls.map((u) => (
+                    <div
+                      key={u.id}
+                      className={`px-4 py-3 text-sm flex justify-between items-center hover:bg-muted cursor-pointer ${
+                        selected?.id === u.id ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                      }`}
+                      onClick={() => setSelected(u)}
+                    >
+                      <div className="truncate w-40">{u.url}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(u.last_crawled_at).toLocaleDateString()}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(u.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
-                    ))
-                  )}
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
             </CardContent>
