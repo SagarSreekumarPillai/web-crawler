@@ -17,7 +17,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 bg-background text-foreground">
-      <img src="/empty-state.svg" alt="No data" className="w-48 mb-6 opacity-70" />
+     {/* <img src="/empty-state.svg" alt="" aria-hidden="true" className="w-48 mb-6 opacity-70" /> */}
       <h2 className="text-2xl font-semibold mb-2">Welcome to Web Crawler</h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-md">
         You haven’t crawled any websites yet. Enter a URL to begin crawling and see insights here.

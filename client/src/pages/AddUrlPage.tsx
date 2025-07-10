@@ -32,7 +32,7 @@ export default function AddUrlPage() {
       <Card className="w-full max-w-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            🔍 Website Metadata Analyzer
+            🔍 Website Crawler
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
