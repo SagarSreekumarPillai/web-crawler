@@ -144,7 +144,10 @@ export default function DashboardPage() {
   return (
     <div className="p-4 sm:p-6 md:p-10 bg-background text-foreground min-h-screen space-y-6 max-w-screen-2xl mx-auto">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold tracking-tight">🌐 Web Crawler Dashboard</h1>
+      <div className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100">
+        <Globe className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <span>Web Crawler</span>
+      </div>
         <Button
           variant="ghost"
           size="sm"
@@ -183,7 +186,7 @@ export default function DashboardPage() {
             <CardHeader className="flex justify-between items-start">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Globe className="h-5 w-5 text-blue-600" />
+                  <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   {selected?.url || "No URL Selected"}
                   {selected?.status && (
                     <Badge
@@ -212,12 +215,13 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                <MetricCard icon={<Heading1 />} label="H1 Tags" value={selected?.h1_count} />
-                <MetricCard icon={<Heading2 />} label="H2 Tags" value={selected?.h2_count} />
-                <MetricCard icon={<Heading3 />} label="H3 Tags" value={selected?.h3_count} />
-                <MetricCard icon={<Link />} label="Internal Links" value={selected?.internal_links} />
-                <MetricCard icon={<Link />} label="External Links" value={selected?.external_links} />
-                <MetricCard icon={<Lock />} label="Login Form" value={selected?.has_login_form ? "Yes" : "No"} />
+              <MetricCard icon={<Heading1 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h1_count} />
+              <MetricCard icon={<Heading2 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h2_count} />
+              <MetricCard icon={<Heading3 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h3_count} />
+              <MetricCard icon={<Link className="text-blue-600 dark:text-blue-400" />} label="Internal" value={selected?.internal_links} />
+              <MetricCard icon={<Link className="text-blue-600 dark:text-blue-400" />} label="External" value={selected?.external_links} />
+              <MetricCard icon={<Lock className="text-red-600 dark:text-red-400" />} label="Login" value={selected?.has_login_form ? "Yes" : "No"} />
+
               </div>
 
               <div className="mt-6 space-y-2 text-sm">
@@ -309,9 +313,10 @@ function MetricCard({
   value: number | string | undefined
 }) {
   return (
-    <div className="p-4 rounded-xl bg-muted text-foreground shadow-sm flex flex-col items-start">
-      <div className="text-gray-500 text-xs mb-1 flex items-center gap-1">{icon} {label}</div>
-      <div className="text-xl font-bold">{value ?? "—"}</div>
+    <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800 shadow-sm flex flex-col items-start">
+      <div className="text-xs mb-1 flex items-center gap-2">{icon}<span className="font-medium text-gray-600 dark:text-gray-300">{label}</span></div>
+      <div className="text-xl font-semibold text-gray-900 dark:text-white">{value ?? "—"}</div>
     </div>
   )
 }
+
