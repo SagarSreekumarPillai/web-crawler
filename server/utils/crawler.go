@@ -1,14 +1,14 @@
 package utils
 
 import (
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
-	"log"
-	"net/url"
 )
 
 type Metadata struct {
@@ -28,7 +28,11 @@ func Crawl(urlStr string) (*Metadata, error) {
 		Timeout: 10 * time.Second,
 	}
 
-	resp, err := client.Get(urlStr)
+	// Set User-Agent to mimic browser
+	req, _ := http.NewRequest("GET", urlStr, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +57,11 @@ func Crawl(urlStr string) (*Metadata, error) {
 		}
 	}
 
-	// Re-fetch body for goquery since tokenizer consumed it
-	resp2, err := client.Get(urlStr)
+	// Fetch again for goquery (since tokenizer consumed stream)
+	req2, _ := http.NewRequest("GET", urlStr, nil)
+	req2.Header.Set("User-Agent", req.Header.Get("User-Agent"))
+
+	resp2, err := client.Do(req2)
 	if err != nil {
 		return nil, err
 	}
@@ -69,19 +76,16 @@ func Crawl(urlStr string) (*Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	baseHost := parsedURL.Host
 
 	meta := &Metadata{
 		HTMLVersion: parseHTMLVersion(doctype),
 		Title:       doc.Find("title").Text(),
+		H1Count:     doc.Find("h1").Length(),
+		H2Count:     doc.Find("h2").Length(),
+		H3Count:     doc.Find("h3").Length(),
 	}
 
-	// Count headings
-	meta.H1Count = doc.Find("h1").Length()
-	meta.H2Count = doc.Find("h2").Length()
-	meta.H3Count = doc.Find("h3").Length()
-
-	// Analyze links
+	// Link classification
 	internal := 0
 	external := 0
 
@@ -92,7 +96,7 @@ func Crawl(urlStr string) (*Metadata, error) {
 		}
 		link = strings.TrimSpace(link)
 
-		// Ignore mailto:, tel:, javascript:, etc.
+		// Ignore non-http(s)
 		if strings.HasPrefix(link, "mailto:") || strings.HasPrefix(link, "tel:") || strings.HasPrefix(link, "javascript:") {
 			return
 		}
@@ -102,10 +106,7 @@ func Crawl(urlStr string) (*Metadata, error) {
 			return
 		}
 
-		// Resolve relative URLs
 		absoluteURL := parsedURL.ResolveReference(linkURL)
-
-		// Compare hostname only (ignores port/subpath differences)
 		if absoluteURL.Hostname() == parsedURL.Hostname() {
 			internal++
 		} else {
@@ -115,7 +116,6 @@ func Crawl(urlStr string) (*Metadata, error) {
 
 	meta.InternalLinks = internal
 	meta.ExternalLinks = external
-
 
 	// Detect login form
 	doc.Find("form").EachWithBreak(func(i int, form *goquery.Selection) bool {
@@ -127,13 +127,10 @@ func Crawl(urlStr string) (*Metadata, error) {
 			}
 			return true
 		})
-		if meta.HasLoginForm {
-			return false
-		}
-		return true
+		return !meta.HasLoginForm
 	})
 
-	// Detect broken links (check only first 10 for speed)
+	// Detect broken links (check first 10)
 	broken := []string{}
 	doc.Find("a[href]").EachWithBreak(func(i int, s *goquery.Selection) bool {
 		if i >= 10 {
@@ -145,12 +142,14 @@ func Crawl(urlStr string) (*Metadata, error) {
 		if err != nil {
 			return true
 		}
-		if !linkURL.IsAbs() {
-			linkURL = parsedURL.ResolveReference(linkURL)
-		}
-		headResp, err := client.Head(linkURL.String())
+		absoluteURL := parsedURL.ResolveReference(linkURL)
+
+		headReq, _ := http.NewRequest("HEAD", absoluteURL.String(), nil)
+		headReq.Header.Set("User-Agent", req.Header.Get("User-Agent"))
+
+		headResp, err := client.Do(headReq)
 		if err != nil || headResp.StatusCode >= 400 {
-			broken = append(broken, linkURL.String())
+			broken = append(broken, absoluteURL.String())
 		}
 		return true
 	})
