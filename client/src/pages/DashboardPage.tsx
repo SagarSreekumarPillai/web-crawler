@@ -1,29 +1,20 @@
 import { useEffect, useState } from "react"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  RotateCcw,
   Globe,
-  Link,
-  Lock,
   Sun,
   Moon,
-  Heading1,
-  Heading2,
-  Heading3,
   RefreshCcw,
   Trash2,
   PlusCircle,
 } from "lucide-react"
 import { useTheme } from "next-themes"
+import MetricCard from "@/components/dashboard/MetricCard"
+import EmptyState from "@/components/dashboard/EmptyState"
 
 type UrlRecord = {
   id: number
@@ -49,7 +40,6 @@ export default function DashboardPage() {
   const [submitting, setSubmitting] = useState(false)
   const [recrawlId, setRecrawlId] = useState<number | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
-
 
   useEffect(() => {
     fetchData()
@@ -118,46 +108,24 @@ export default function DashboardPage() {
   }
 
   if (urls.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 bg-background text-foreground min-h-screen">
-        <img src="/empty-state.svg" alt="No data" className="w-48 mb-6 opacity-70" />
-        <h2 className="text-2xl font-semibold mb-2">Welcome to Web Crawler</h2>
-        <p className="text-sm text-gray-500 mb-6 max-w-md">
-          You haven’t crawled any websites yet. Enter a URL to begin crawling and see insights here.
-        </p>
-        <div className="flex gap-2">
-          <Input
-            placeholder="https://example.com"
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            className="w-72"
-          />
-          <Button onClick={handleSubmit} disabled={submitting}>
-            <PlusCircle className="h-4 w-4 mr-1" />
-            {submitting ? "Crawling..." : "Start"}
-          </Button>
-        </div>
-      </div>
-    )
+    return <EmptyState value={newUrl} setValue={setNewUrl} onSubmit={handleSubmit} submitting={submitting} />
   }
 
   return (
     <div className="p-4 sm:p-6 md:p-10 bg-background text-foreground min-h-screen space-y-6 max-w-screen-2xl mx-auto">
       <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100">
-        <Globe className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-        <span>Web Crawler</span>
-      </div>
+        <div className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
+          <Globe className="h-6 w-6 text-primary" />
+          <span>Web Crawler</span>
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            setTheme(resolvedTheme === "dark" ? "light" : "dark")
-          }
-          className="flex items-center gap-1"
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="flex items-center gap-2"
         >
           {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          {resolvedTheme === "dark" ? "Light" : "Dark"}
+          <span className="capitalize">{resolvedTheme === "dark" ? "Light" : "Dark"}</span>
         </Button>
       </div>
 
@@ -186,18 +154,18 @@ export default function DashboardPage() {
             <CardHeader className="flex justify-between items-start">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <Globe className="h-5 w-5 text-primary" />
                   {selected?.url || "No URL Selected"}
                   {selected?.status && (
                     <Badge
                       variant={selected.status === "done" ? "default" : "destructive"}
-                      className="ml-2 text-xs capitalize"
+                      className="ml-2 text-xs capitalize px-2 py-1"
                     >
                       {selected.status}
                     </Badge>
                   )}
                 </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Last crawled: {selected ? new Date(selected.last_crawled_at).toLocaleString() : "--"}
                 </p>
               </div>
@@ -215,13 +183,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-              <MetricCard icon={<Heading1 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h1_count} />
-              <MetricCard icon={<Heading2 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h2_count} />
-              <MetricCard icon={<Heading3 className="text-indigo-600 dark:text-indigo-400" />} label="Tags" value={selected?.h3_count} />
-              <MetricCard icon={<Link className="text-blue-600 dark:text-blue-400" />} label="Internal" value={selected?.internal_links} />
-              <MetricCard icon={<Link className="text-blue-600 dark:text-blue-400" />} label="External" value={selected?.external_links} />
-              <MetricCard icon={<Lock className="text-red-600 dark:text-red-400" />} label="Login" value={selected?.has_login_form ? "Yes" : "No"} />
-
+                <MetricCard type="heading" label="H1 Tags" value={selected?.h1_count} />
+                <MetricCard type="heading2" label="H2 Tags" value={selected?.h2_count} />
+                <MetricCard type="heading3" label="H3 Tags" value={selected?.h3_count} />
+                <MetricCard type="internal" label="Internal Links" value={selected?.internal_links} />
+                <MetricCard type="external" label="External Links" value={selected?.external_links} />
+                <MetricCard type="login" label="Login Form" value={selected?.has_login_form ? "Yes" : "No"} />
               </div>
 
               <div className="mt-6 space-y-2 text-sm">
@@ -233,7 +200,7 @@ export default function DashboardPage() {
                 <h4 className="font-semibold text-sm mb-2">Broken Links</h4>
                 {selected?.broken_links.length ? (
                   <ScrollArea className="h-24 rounded-md border p-2">
-                    <ul className="list-disc pl-4 text-xs text-red-600 space-y-1">
+                    <ul className="list-disc pl-4 text-xs text-destructive space-y-1">
                       {selected.broken_links.map((link, idx) => (
                         <li key={idx}>{link}</li>
                       ))}
@@ -247,7 +214,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right: History */}
+        {/* Right - History */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <Card className="flex-1 flex flex-col">
             <CardHeader className="flex justify-between items-center">
@@ -257,7 +224,7 @@ export default function DashboardPage() {
                   size="sm"
                   variant="ghost"
                   onClick={handleClearAll}
-                  className="text-xs text-red-600"
+                  className="text-xs text-destructive"
                 >
                   Clear All
                 </Button>
@@ -269,8 +236,8 @@ export default function DashboardPage() {
                   {urls.map((u) => (
                     <div
                       key={u.id}
-                      className={`px-4 py-3 text-sm flex justify-between items-center hover:bg-muted cursor-pointer ${
-                        selected?.id === u.id ? "bg-muted border-l-4 border-primary/70" : "hover:bg-muted"
+                      className={`px-4 py-3 text-sm flex justify-between items-center cursor-pointer ${
+                        selected?.id === u.id ? "bg-muted border-l-4 border-primary" : "hover:bg-muted"
                       }`}
                       onClick={() => setSelected(u)}
                     >
@@ -302,21 +269,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-function MetricCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: number | string | undefined
-}) {
-  return (
-    <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800 shadow-sm flex flex-col items-start">
-      <div className="text-xs mb-1 flex items-center gap-2">{icon}<span className="font-medium text-gray-600 dark:text-gray-300">{label}</span></div>
-      <div className="text-xl font-semibold text-gray-900 dark:text-white">{value ?? "—"}</div>
-    </div>
-  )
-}
-
