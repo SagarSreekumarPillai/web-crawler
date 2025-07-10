@@ -1,42 +1,55 @@
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { addUrl } from "@/lib/api";
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { addUrl } from "@/lib/api"
 
 export default function AddUrlPage() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("")
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleSubmit = async () => {
-    if (!url.trim()) return alert("Please enter a URL");
-
-    try {
-      const result = await addUrl(url);
-      console.log("✅ URL submitted:", result);
-      // TODO: navigate to dashboard or show toast
-    } catch (err: any) {
-      console.error("❌ Submission failed:", err.message);
-      alert(err.message);
+    if (!url.trim()) {
+      alert("Please enter a valid URL")
+      return
     }
-  };
+    setLoading(true)
+    try {
+      const result = await addUrl(url)
+      console.log("✅ Submitted:", result)
+      navigate("/dashboard", { state: { urlData: result } })
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle className="text-xl">🔗 Add a Website URL</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            🔍 Website Metadata Analyzer
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600 text-center">
+            Enter any website URL to crawl and analyze its structure instantly.
+          </p>
           <Input
             placeholder="https://example.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            disabled={loading}
           />
-          <Button type="button" onClick={handleSubmit}>
-            Start Crawling
+          <Button onClick={handleSubmit} disabled={loading} className="w-full">
+            {loading ? "Analyzing..." : "Start Crawl"}
           </Button>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
