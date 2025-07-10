@@ -15,6 +15,7 @@ import {
   Link,
   Lock,
   Sun,
+  Moon,
   Heading1,
   Heading2,
   Heading3,
@@ -22,6 +23,7 @@ import {
   Trash2,
   PlusCircle,
 } from "lucide-react"
+import { useTheme } from "next-themes"
 
 type UrlRecord = {
   id: number
@@ -46,6 +48,8 @@ export default function DashboardPage() {
   const [newUrl, setNewUrl] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [recrawlId, setRecrawlId] = useState<number | null>(null)
+  const { resolvedTheme, setTheme } = useTheme()
+
 
   useEffect(() => {
     fetchData()
@@ -115,7 +119,7 @@ export default function DashboardPage() {
 
   if (urls.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 bg-white">
+      <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 bg-background text-foreground min-h-screen">
         <img src="/empty-state.svg" alt="No data" className="w-48 mb-6 opacity-70" />
         <h2 className="text-2xl font-semibold mb-2">Welcome to Web Crawler</h2>
         <p className="text-sm text-gray-500 mb-6 max-w-md">
@@ -138,11 +142,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-white text-black min-h-screen space-y-6 max-w-screen-2xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-10 bg-background text-foreground min-h-screen space-y-6 max-w-screen-2xl mx-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold tracking-tight">🌐 Web Crawler Dashboard</h1>
-        <Button variant="ghost" size="sm" className="flex items-center gap-1">
-          <Sun className="h-4 w-4" /> Light
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            setTheme(resolvedTheme === "dark" ? "light" : "dark")
+          }
+          className="flex items-center gap-1"
+        >
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {resolvedTheme === "dark" ? "Light" : "Dark"}
         </Button>
       </div>
 
@@ -254,7 +266,7 @@ export default function DashboardPage() {
                     <div
                       key={u.id}
                       className={`px-4 py-3 text-sm flex justify-between items-center hover:bg-muted cursor-pointer ${
-                        selected?.id === u.id ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                        selected?.id === u.id ? "bg-muted border-l-4 border-primary/70" : "hover:bg-muted"
                       }`}
                       onClick={() => setSelected(u)}
                     >
@@ -297,7 +309,7 @@ function MetricCard({
   value: number | string | undefined
 }) {
   return (
-    <div className="p-4 rounded-xl bg-gray-100 shadow-sm flex flex-col items-start">
+    <div className="p-4 rounded-xl bg-muted text-foreground shadow-sm flex flex-col items-start">
       <div className="text-gray-500 text-xs mb-1 flex items-center gap-1">{icon} {label}</div>
       <div className="text-xl font-bold">{value ?? "—"}</div>
     </div>
