@@ -82,22 +82,40 @@ func Crawl(urlStr string) (*Metadata, error) {
 	meta.H3Count = doc.Find("h3").Length()
 
 	// Analyze links
+	internal := 0
+	external := 0
+
 	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
-		link, _ := s.Attr("href")
-		link = strings.TrimSpace(link)
-		if link == "" || strings.HasPrefix(link, "#") {
+		link, exists := s.Attr("href")
+		if !exists || strings.TrimSpace(link) == "" {
 			return
 		}
+		link = strings.TrimSpace(link)
+
+		// Ignore mailto:, tel:, javascript:, etc.
+		if strings.HasPrefix(link, "mailto:") || strings.HasPrefix(link, "tel:") || strings.HasPrefix(link, "javascript:") {
+			return
+		}
+
 		linkURL, err := url.Parse(link)
 		if err != nil {
 			return
 		}
-		if linkURL.Host == "" || linkURL.Host == baseHost {
-			meta.InternalLinks++
+
+		// Resolve relative URLs
+		absoluteURL := parsedURL.ResolveReference(linkURL)
+
+		// Compare hostname only (ignores port/subpath differences)
+		if absoluteURL.Hostname() == parsedURL.Hostname() {
+			internal++
 		} else {
-			meta.ExternalLinks++
+			external++
 		}
 	})
+
+	meta.InternalLinks = internal
+	meta.ExternalLinks = external
+
 
 	// Detect login form
 	doc.Find("form").EachWithBreak(func(i int, form *goquery.Selection) bool {
