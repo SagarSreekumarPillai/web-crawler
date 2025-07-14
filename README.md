@@ -143,16 +143,6 @@ DB_PORT=3306
 
 ---
 
-## 🖼️ UI Preview
-
-> Based on this design inspiration: [Phoenix SaaS Dashboard](https://dribbble.com/shots/24882387-Dashboard-for-a-IoT-SaaS-Phoenix)
-
-Dark and Light mode:
-
-![screenshot](https://dummyimage.com/1200x600/000/fff\&text=Dashboard+Preview)
-
----
-
 ## 👨‍💻 Developed By
 
 [Sagar Sreekumar Pillai](https://github.com/SagarSreekumarPillai)
